@@ -1,0 +1,13 @@
+{
+    "name": "wrve/oc-excelimportexport-plugin",
+    "type": "october-plugin",
+    "description": "Excel support for October CMS' Import Export behavior",
+    "homepage": "https://octobercms.com/plugin/rainlab-builder",
+    "keywords": ["october", "octobercms", "excel"],
+    "license": "MIT",
+    "require": {
+        "php": ">=7.0",
+        "composer/installers": "~1.0",
+        "phpoffice/phpspreadsheet": "^1.17"
+    }
+}
