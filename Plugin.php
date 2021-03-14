@@ -17,10 +17,10 @@ class Plugin extends PluginBase
     public function pluginDetails()
     {
         return [
-            'name' => 'ExcelImportExport',
+            'name' => 'Excel Import & Export',
             'description' => 'Adds support for Excel to ImportExportController',
             'author' => 'WRvE',
-            'icon' => 'icon-leaf',
+            'icon' => 'icon-file-excel-o',
         ];
     }
 
