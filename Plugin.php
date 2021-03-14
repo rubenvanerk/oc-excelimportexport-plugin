@@ -19,7 +19,7 @@ class Plugin extends PluginBase
         return [
             'name' => 'Excel Import & Export',
             'description' => 'Adds support for Excel to ImportExportController',
-            'author' => 'WRvE',
+            'author' => 'Ruben van Erk',
             'icon' => 'icon-file-excel-o',
         ];
     }
