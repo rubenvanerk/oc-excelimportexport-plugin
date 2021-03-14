@@ -2,7 +2,7 @@
     "name": "wrve/oc-excelimportexport-plugin",
     "type": "october-plugin",
     "description": "Excel support for October CMS' Import Export behavior",
-    "homepage": "https://octobercms.com/plugin/rainlab-builder",
+    "homepage": "https://github.com/rubenvanerk/oc-excelimportexport-plugin",
     "keywords": ["october", "octobercms", "excel"],
     "license": "MIT",
     "require": {
