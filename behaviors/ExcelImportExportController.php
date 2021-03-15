@@ -1,10 +1,10 @@
 <?php namespace WRvE\ExcelImportExport\Behaviors;
 
 use Backend\Behaviors\ImportExportController;
-use Backend\Widgets\Form;
 use October\Rain\Database\Models\DeferredBinding;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
+use System\Models\File;
 
 class ExcelImportExportController extends ImportExportController
 {
@@ -22,22 +22,37 @@ class ExcelImportExportController extends ImportExportController
         return parent::createCsvReader($path);
     }
 
+
     private function convertToCsv(string $path)
     {
         $ext = pathinfo($path, PATHINFO_EXTENSION);
 
-        if ($ext === 'csv') {
+        if ($ext === 'csv' || mime_content_type($path) === 'text/csv' || mime_content_type($path) === 'text/plain') {
             return $path;
         }
 
+        $tempCsvPath = $path . '.csv';
+
         $reader = new Xlsx();
         $spreadsheet = $reader->load($path);
-
         $writer = new Csv($spreadsheet);
-
         $writer->setSheetIndex(0);
-        $writer->save($path . '.csv');
+        $writer->save($tempCsvPath);
 
+        $fileModel = $this->getFileModel();
+        $disk = $fileModel->getDisk();
+        $disk->put($fileModel->getDiskPath() . '.csv', file_get_contents($tempCsvPath));
+        $fileModel->disk_name = $fileModel->disk_name . '.csv';
+        $fileModel->save();
+
+        return $path . '.csv';
+    }
+
+    /**
+     * @return File
+     */
+    private function getFileModel()
+    {
         $sessionKey = $this->importUploadFormWidget->getSessionKey();
 
         $deferredBinding = DeferredBinding::where('session_key', $sessionKey)
@@ -45,11 +60,6 @@ class ExcelImportExportController extends ImportExportController
             ->where('master_field', 'import_file')
             ->first();
 
-        $file = $deferredBinding->slave_type::find($deferredBinding->slave_id);
-
-        $file->disk_name = pathinfo($path)['basename'] . '.csv';
-        $file->save();
-
-        return $path . '.csv';
+        return $deferredBinding->slave_type::find($deferredBinding->slave_id);
     }
 }
