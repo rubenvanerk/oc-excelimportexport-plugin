@@ -32,6 +32,10 @@ class Plugin extends PluginBase
     public function boot()
     {
         Event::listen('backend.form.extendFields', function (Backend\Widgets\Form $widget) {
+            if (!$widget->getController()->implement) {
+                return;
+            }
+
             if (!in_array('WRvE\ExcelImportExport\Behaviors\ExcelImportExportController', $widget->getController()->implement)) {
                 return;
             }
