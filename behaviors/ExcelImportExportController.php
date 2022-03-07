@@ -2,9 +2,12 @@
 
 use Backend\Behaviors\ImportExportController;
 use October\Rain\Database\Models\DeferredBinding;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Reader\Exception;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use System\Models\File;
+use ApplicationException;
 
 class ExcelImportExportController extends ImportExportController
 {
@@ -23,6 +26,9 @@ class ExcelImportExportController extends ImportExportController
     }
 
 
+    /**
+     * @throws ApplicationException
+     */
     private function convertToCsv(string $path)
     {
         $ext = pathinfo($path, PATHINFO_EXTENSION);
@@ -33,7 +39,14 @@ class ExcelImportExportController extends ImportExportController
 
         $tempCsvPath = $path . '.csv';
 
-        $reader = new Xlsx();
+        $inputFileType = IOFactory::identify($path);
+
+        try {
+            $reader = IOFactory::createReader($inputFileType);
+        } catch (Exception $e) {
+            throw new ApplicationException('Unsupported file type: ' . $inputFileType);
+        }
+
         $spreadsheet = $reader->load($path);
         $writer = new Csv($spreadsheet);
         $writer->setSheetIndex(0);
