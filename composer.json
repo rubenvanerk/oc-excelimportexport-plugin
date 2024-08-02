@@ -9,5 +9,10 @@
         "php": ">=7.0",
         "composer/installers": "~1.0",
         "phpoffice/phpspreadsheet": "^1.17"
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true
+        }
     }
 }

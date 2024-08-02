@@ -1,16 +1,22 @@
 <?php namespace WRvE\ExcelImportExport\Behaviors;
 
+use ApplicationException;
 use Backend\Behaviors\ImportExportController;
+use League\Csv\Reader as CsvReader;
 use October\Rain\Database\Models\DeferredBinding;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Exception;
-use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use System\Models\File;
-use ApplicationException;
+use Carbon\Carbon;
 
 class ExcelImportExportController extends ImportExportController
 {
+    protected $columnsToKeep = "all";
+
     public function __construct($controller)
     {
         parent::__construct($controller);
@@ -18,13 +24,16 @@ class ExcelImportExportController extends ImportExportController
         $this->assetPath = '/modules/backend/behaviors/importexportcontroller/assets';
     }
 
-    protected function createCsvReader($path)
+    public function setColumnsToKeep($columns)
     {
-        $path = $this->convertToCsv($path);
-
-        return parent::createCsvReader($path);
+        $this->columnsToKeep = $columns;
     }
 
+    protected function createCsvReader(string $path): CsvReader
+    {
+        $path = $this->convertToCsv($path);
+        return parent::createCsvReader($path);
+    }
 
     /**
      * @throws ApplicationException
@@ -48,7 +57,53 @@ class ExcelImportExportController extends ImportExportController
         }
 
         $spreadsheet = $reader->load($path);
-        $writer = new Csv($spreadsheet);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Determinar las columnas a mantener
+        if ($this->columnsToKeep === "all" || empty($this->columnsToKeep)) {
+            $columnsToKeep = [];
+            $firstRow = $sheet->getRowIterator()->current();
+            foreach ($firstRow->getCellIterator() as $cell) {
+                if (!is_null($cell->getValue()) && $cell->getValue() !== '') {
+                    $columnsToKeep[] = $cell->getColumn();
+                }
+            }
+        } else {
+            $columnsToKeep = $this->columnsToKeep;
+        }
+
+        // Crear una nueva hoja de cálculo para almacenar solo las columnas seleccionadas
+        $newSpreadsheet = new Spreadsheet();
+        $newSheet = $newSpreadsheet->getActiveSheet();
+        $currentColumn = 1;
+
+        // Copiar los valores de las columnas seleccionadas a la nueva hoja de cálculo
+        foreach ($columnsToKeep as $column) {
+            $colIndex = Coordinate::columnIndexFromString($column);
+            foreach ($sheet->getRowIterator() as $row) {
+                $rowIndex = $row->getRowIndex();
+                $cellCoordinate = Coordinate::stringFromColumnIndex($colIndex) . $rowIndex;
+                $cell = $sheet->getCell($cellCoordinate);
+                $value = $cell->getValue();
+                if (!is_null($value) && $value !== '') {
+                    $cellFormat = $sheet->getStyle($cell->getCoordinate())->getNumberFormat()->getFormatCode();
+                    if (Date::isDateTimeFormatCode($cellFormat)) {
+                        if (is_numeric($value)) {
+                            $value = Date::excelToDateTimeObject($value)->format('Y-m-d H:i:s');
+                        } else {
+                            $value = Carbon::parse($value)->format('Y-m-d H:i:s');
+                        }
+                    }
+                } else {
+                    $value = null;
+                }
+                $newCellCoordinate = Coordinate::stringFromColumnIndex($currentColumn) . $rowIndex;
+                $newSheet->getCell($newCellCoordinate)->setValue($value);
+            }
+            $currentColumn++;
+        }
+
+        $writer = new Csv($newSpreadsheet);
         $writer->setSheetIndex(0);
         $writer->save($tempCsvPath);
 

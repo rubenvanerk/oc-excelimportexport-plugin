@@ -50,7 +50,7 @@ class Plugin extends PluginBase
 
             $widget->addFields([
                 'import_file' => [
-                    'label' => 'backend::lang.import_export.import_file',
+                    'label' => 'Importar datos',
                     'type' => 'fileupload',
                     'mode' => 'file',
                     'span' => 'left',
